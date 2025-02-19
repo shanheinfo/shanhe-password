@@ -199,7 +199,12 @@ func (a *App) appendPasswordToPasswordList(password string) error {
 	if err != nil {
 		return fmt.Errorf("打开密码本文件失败: %v", err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			a.addLogMessage(fmt.Sprintf("关闭密码本文件失败: %v", err))
+		}
+	}(file)
 
 	// 如果文件存在且不为空，先写入换行符
 	if fileInfo != nil && fileInfo.Size() > 0 {
@@ -260,7 +265,12 @@ func (a *App) handleZip(archivePath, password, outputDir string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("打开ZIP文件失败: %v", err)
 	}
-	defer reader.Close()
+	defer func(reader *zip.ReadCloser) {
+		err := reader.Close()
+		if err != nil {
+			a.addLogMessage(fmt.Sprintf("关闭ZIP文件失败: %v", err))
+		}
+	}(reader)
 
 	// 先尝试列出文件，检查密码是否正确
 	for _, file := range reader.File {
@@ -286,7 +296,10 @@ func (a *App) handleZip(archivePath, password, outputDir string) (bool, error) {
 
 		filePath := filepath.Join(outputDir, file.Name)
 		if file.FileInfo().IsDir() {
-			os.MkdirAll(filePath, os.ModePerm)
+			err := os.MkdirAll(filePath, os.ModePerm)
+			if err != nil {
+				return false, err
+			}
 			continue
 		}
 
@@ -301,17 +314,23 @@ func (a *App) handleZip(archivePath, password, outputDir string) (bool, error) {
 
 		srcFile, err := file.Open()
 		if err != nil {
-			dstFile.Close()
+			err := dstFile.Close()
+			if err != nil {
+				return false, err
+			}
 			return false, fmt.Errorf("打开压缩文件失败: %v", err)
 		}
 
 		_, err = io.Copy(dstFile, srcFile)
-		srcFile.Close()
-		dstFile.Close()
-
+		err = srcFile.Close()
 		if err != nil {
-			return false, fmt.Errorf("解压文件失败: %v", err)
+			return false, err
 		}
+		err = dstFile.Close()
+		if err != nil {
+			return false, err
+		}
+
 	}
 
 	return true, nil
@@ -327,7 +346,12 @@ func (a *App) handle7z(archivePath, password, outputDir string) (bool, error) {
 		}
 		return false, fmt.Errorf("打开7z文件失败: %v", err)
 	}
-	defer r.Close()
+	defer func(r *sevenzip.ReadCloser) {
+		err := r.Close()
+		if err != nil {
+
+		}
+	}(r)
 
 	// 尝试解压
 	for _, f := range r.File {
@@ -338,29 +362,46 @@ func (a *App) handle7z(archivePath, password, outputDir string) (bool, error) {
 
 		path := filepath.Join(outputDir, f.Name)
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(path, os.ModePerm)
-			rc.Close()
+			err := os.MkdirAll(path, os.ModePerm)
+			if err != nil {
+				return false, err
+			}
+			err = rc.Close()
+			if err != nil {
+				return false, err
+			}
 			continue
 		}
 
 		err = os.MkdirAll(filepath.Dir(path), os.ModePerm)
 		if err != nil {
-			rc.Close()
+			err := rc.Close()
+			if err != nil {
+				return false, err
+			}
 			return false, fmt.Errorf("创建目录失败: %v", err)
 		}
 
 		outFile, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			rc.Close()
+			err := rc.Close()
+			if err != nil {
+				return false, err
+			}
 			return false, fmt.Errorf("创建文件失败: %v", err)
 		}
 
 		_, err = io.Copy(outFile, rc)
-		rc.Close()
-		outFile.Close()
+		err = rc.Close()
 		if err != nil {
-			return false, fmt.Errorf("写入文件失败: %v", err)
+			return false, err
 		}
+		err = outFile.Close()
+		if err != nil {
+			return false, err
+		}
+
+		return false, fmt.Errorf("写入文件失败: %v", err)
 	}
 
 	return true, nil
@@ -375,7 +416,12 @@ func (a *App) handleRar(archivePath, password, outputDir string) (bool, error) {
 		}
 		return false, fmt.Errorf("打开RAR文件失败: %v", err)
 	}
-	defer rr.Close()
+	defer func(rr *rardecode.ReadCloser) {
+		err := rr.Close()
+		if err != nil {
+
+		}
+	}(rr)
 
 	for {
 		header, err := rr.Next()
@@ -388,7 +434,10 @@ func (a *App) handleRar(archivePath, password, outputDir string) (bool, error) {
 
 		path := filepath.Join(outputDir, header.Name)
 		if header.IsDir {
-			os.MkdirAll(path, os.ModePerm)
+			err := os.MkdirAll(path, os.ModePerm)
+			if err != nil {
+				return false, err
+			}
 			continue
 		}
 
@@ -403,10 +452,12 @@ func (a *App) handleRar(archivePath, password, outputDir string) (bool, error) {
 		}
 
 		_, err = io.Copy(outFile, rr)
-		outFile.Close()
+		err = outFile.Close()
 		if err != nil {
-			return false, fmt.Errorf("写入文件失败: %v", err)
+			return false, err
 		}
+
+		return false, fmt.Errorf("写入文件失败: %v", err)
 	}
 
 	return true, nil
@@ -443,7 +494,7 @@ func (a *App) processNestedArchives(dir string) {
 		go func(archivePath string) {
 			defer wg.Done()
 
-			// 构建新的输出目录
+			// 构建新地输出目录
 			baseName := strings.TrimSuffix(filepath.Base(archivePath), filepath.Ext(archivePath))
 			nestedOutputDir := filepath.Join(filepath.Dir(archivePath), "extracted_"+baseName)
 
@@ -709,7 +760,7 @@ func (a *App) generatePasswords(chars string, length int, jobs chan<- string, st
 	generate("", length)
 }
 
-// 定义版本信息结构
+// VersionInfo 定义版本信息结构
 type VersionInfo struct {
 	CurrentVersion string
 	LatestVersion  string
@@ -718,9 +769,9 @@ type VersionInfo struct {
 	Error          string
 }
 
-// 获取版本信息
+// GetVersionInfo 获取版本信息
 func (a *App) GetVersionInfo() VersionInfo {
-	currentVersion := "1.0.0"
+	currentVersion := "v1.0.0"
 	repoURL := "https://github.com/shanheinfo/shanhe-password"
 
 	// 获取 GitHub 最新版本
@@ -734,7 +785,12 @@ func (a *App) GetVersionInfo() VersionInfo {
 			Error:          "无法连接到服务器，请检查网络连接",
 		}
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resp.Body)
 
 	if resp.StatusCode == 404 {
 		return VersionInfo{
@@ -770,6 +826,6 @@ func (a *App) GetVersionInfo() VersionInfo {
 		CurrentVersion: currentVersion,
 		LatestVersion:  release.TagName,
 		UpdateURL:      release.HTMLURL,
-		IsLatest:       release.TagName == currentVersion,
+		IsLatest:       strings.TrimPrefix(release.TagName, "v") == strings.TrimPrefix(currentVersion, "v"), // 比较时去掉 v 前缀
 	}
 }
