@@ -12,7 +12,7 @@
     "icon": ["build/appicon.png"],
     "companyName": "shanheinfo",
     "productName": "山河压缩包密码批量解压和破解工具",
-    "productVersion": "1.0.0",
+    "productVersion": "1.0.1",
     "copyright": "Copyright © 2024 shanhe",
     "comments": "支持zip/rar/7z格式的压缩包密码批量解压和破解"
   },

@@ -409,20 +409,23 @@ func (a *App) handle7z(archivePath, password, outputDir string) (bool, error) {
 
 // handleRar 处理RAR文件
 func (a *App) handleRar(archivePath, password, outputDir string) (bool, error) {
+	// 尝试打开 RAR 文件
 	rr, err := rardecode.OpenReader(archivePath, password)
 	if err != nil {
+		// 检查是否是密码错误
 		if strings.Contains(err.Error(), "password") {
-			return false, nil
+			return false, fmt.Errorf("密码错误")
 		}
 		return false, fmt.Errorf("打开RAR文件失败: %v", err)
 	}
 	defer func(rr *rardecode.ReadCloser) {
 		err := rr.Close()
 		if err != nil {
-
+			a.addLogMessage(fmt.Sprintf("关闭RAR文件失败: %v", err))
 		}
 	}(rr)
 
+	// 开始解压文件
 	for {
 		header, err := rr.Next()
 		if err == io.EOF {
@@ -436,28 +439,34 @@ func (a *App) handleRar(archivePath, password, outputDir string) (bool, error) {
 		if header.IsDir {
 			err := os.MkdirAll(path, os.ModePerm)
 			if err != nil {
-				return false, err
+				return false, fmt.Errorf("创建目录失败: %v", err)
 			}
 			continue
 		}
 
+		// 创建目录结构
 		err = os.MkdirAll(filepath.Dir(path), os.ModePerm)
 		if err != nil {
 			return false, fmt.Errorf("创建目录失败: %v", err)
 		}
 
+		// 创建输出文件
 		outFile, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			return false, fmt.Errorf("创建文件失败: %v", err)
 		}
 
+		// 复制文件内容
 		_, err = io.Copy(outFile, rr)
-		err = outFile.Close()
 		if err != nil {
-			return false, err
+			outFile.Close()
+			return false, fmt.Errorf("写入文件失败: %v", err)
 		}
 
-		return false, fmt.Errorf("写入文件失败: %v", err)
+		err = outFile.Close()
+		if err != nil {
+			return false, fmt.Errorf("关闭文件失败: %v", err)
+		}
 	}
 
 	return true, nil
