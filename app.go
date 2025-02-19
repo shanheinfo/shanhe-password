@@ -24,7 +24,6 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
-
 type App struct {
 	ctx             context.Context
 	selectedArchive string     // 选中的压缩包路径
@@ -34,16 +33,13 @@ type App struct {
 	mu              sync.Mutex // 用于保护日志消息的互斥锁
 }
 
-
 func NewApp() *App {
 	return &App{}
 }
 
-
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
-
 
 func (a *App) SelectArchive() string {
 	// 打开文件选择对话框
@@ -75,7 +71,7 @@ func (a *App) SelectArchive() string {
 
 // CancelArchive 用于处理取消按钮的点击事件
 func (a *App) CancelArchive() {
-	a.selectedArchive = ""      // 清空选中的压缩包路径
+	a.selectedArchive = "" // 清空选中的压缩包路径
 	a.addLogMessage("已取消选择压缩包")
 }
 
@@ -120,7 +116,7 @@ func (a *App) SelectOutputDir() string {
 	if selection != "" {
 		a.outputDir = selection
 		a.addLogMessage(fmt.Sprintf("已选择解压目录: %s", selection))
-		return selection 
+		return selection
 	}
 	return ""
 
@@ -375,7 +371,7 @@ func (a *App) handleRar(archivePath, password, outputDir string) (bool, error) {
 	rr, err := rardecode.OpenReader(archivePath, password)
 	if err != nil {
 		if strings.Contains(err.Error(), "password") {
-			return false, nil 
+			return false, nil
 		}
 		return false, fmt.Errorf("打开RAR文件失败: %v", err)
 	}
@@ -642,7 +638,7 @@ func (a *App) bruteForce(archivePath, outputDir string, numWorkers int) {
 				default:
 					if a.tryPassword(archivePath, password, outputDir) {
 						resultChan <- password
-						close(stopChan) 
+						close(stopChan)
 						return
 					}
 				}
@@ -724,24 +720,36 @@ type VersionInfo struct {
 
 // 获取版本信息
 func (a *App) GetVersionInfo() VersionInfo {
-	currentVersion := "1.0.0" 
-	
+	currentVersion := "1.0.0"
+	repoURL := "https://github.com/shanheinfo/shanhe-password"
+
 	// 获取 GitHub 最新版本
 	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Get("https://api.github.com/repos/shanhe/shanhe-password/releases/latest")
-	
+	resp, err := client.Get("https://api.github.com/repos/shanheinfo/shanhe-password/releases/latest")
+
 	if err != nil {
 		return VersionInfo{
 			CurrentVersion: currentVersion,
-			Error:         "无法连接到服务器，请检查网络连接",
+			UpdateURL:      repoURL + "/releases",
+			Error:          "无法连接到服务器，请检查网络连接",
 		}
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == 404 {
+		return VersionInfo{
+			CurrentVersion: currentVersion,
+			UpdateURL:      repoURL + "/releases",
+			Error:          "暂无发布版本",
+			IsLatest:       true,
+		}
+	}
+
 	if resp.StatusCode != 200 {
 		return VersionInfo{
 			CurrentVersion: currentVersion,
-			Error:         "获取版本信息失败，服务器响应异常",
+			UpdateURL:      repoURL + "/releases",
+			Error:          "获取版本信息失败，服务器响应异常",
 		}
 	}
 
@@ -749,11 +757,12 @@ func (a *App) GetVersionInfo() VersionInfo {
 		TagName string `json:"tag_name"`
 		HTMLURL string `json:"html_url"`
 	}
-	
+
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
 		return VersionInfo{
 			CurrentVersion: currentVersion,
-			Error:         "解析版本信息失败",
+			UpdateURL:      repoURL + "/releases",
+			Error:          "解析版本信息失败",
 		}
 	}
 

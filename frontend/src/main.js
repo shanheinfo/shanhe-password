@@ -148,8 +148,11 @@ async function checkVersion() {
     try {
         const versionInfo = await window.go.main.App.GetVersionInfo();
         
+        // 设置链接
+        versionLink.href = versionInfo.UpdateURL;
+        
         if (versionInfo.Error) {
-            versionSpan.textContent = `当前版本: ${versionInfo.CurrentVersion}`;
+            versionSpan.textContent = `v${versionInfo.CurrentVersion}`;
             versionSpan.classList.add('version-error');
             versionLink.title = versionInfo.Error;
             versionLink.classList.add('version-error-icon');
@@ -164,11 +167,10 @@ async function checkVersion() {
             versionSpan.textContent = `发现新版本: v${versionInfo.LatestVersion}`;
             versionSpan.classList.add('version-update');
             versionLink.title = "点击更新";
-            versionLink.href = versionInfo.UpdateURL;
             versionLink.classList.add('version-update-icon');
         }
     } catch (error) {
-        versionSpan.textContent = `当前版本: ${versionInfo.CurrentVersion}`;
+        versionSpan.textContent = `v${versionInfo.CurrentVersion}`;
         versionSpan.classList.add('version-error');
         versionLink.title = "版本检查失败";
         versionLink.classList.add('version-error-icon');
