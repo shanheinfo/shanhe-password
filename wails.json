@@ -1,0 +1,20 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "山河压缩包密码批量解压和破解工具",
+  "outputfilename": "山河压缩包密码批量解压和破解工具",
+  "frontend:install": "",
+  "frontend:build": "",
+  "author": {
+    "name": "shanhe",
+    "email": "shanhel@qq.com"
+  },
+  "info": {
+    "icon": ["build/appicon.png"],
+    "companyName": "shanheinfo",
+    "productName": "山河压缩包密码批量解压和破解工具",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2024 shanhe",
+    "comments": "支持zip/rar/7z格式的压缩包密码批量解压和破解"
+  },
+  "wailsjsdir": "./frontend"
+}

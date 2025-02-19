@@ -1,0 +1,28 @@
+# 编译输出
+build/
+bin/
+
+# IDE 配置
+.idea/
+.vscode/
+
+# 依赖目录
+node_modules/
+
+# 临时文件
+*.log
+*.tmp
+.DS_Store
+
+# Wails 生成的文件
+frontend/dist/
+frontend/wailsjs/
+
+# Wails bin directory
+build/bin
+# Wails Windows NSIS support files
+build/windows/installer/wails_tools.nsh
+build/windows/installer/tmp/
+
+
+

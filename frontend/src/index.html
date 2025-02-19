@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>山河压缩包密码批量解压和破解工具</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="assets/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <a href="https://github.com/shanheinfo/shanhe-password" target="_blank">
+                <i class="fab fa-github"></i> shanheinfo/shanhe-password
+            </a>
+        </div>
+        <div class="header-right">
+            <span>作者: 山河 (shanhe)</span>
+            <a href="https://github.com/shanheinfo" target="_blank">
+                <i class="fab fa-github"></i> shanheinfo
+            </a>
+            <a href="https://github.com/shanheinfo/shanhe-password/blob/main/LICENSE" target="_blank">
+                <i class="fas fa-balance-scale"></i> MIT License
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="button-group">
+            <div class="archive-buttons">
+                <button id="selectArchive" class="button">
+                    <i class="fas fa-file-archive"></i> 选择压缩包
+                </button>
+                <button id="cancelArchive" class="button" style="display: none;">
+                    <i class="fas fa-times"></i> 取消选择
+                </button>
+                <div id="archiveInfo"></div>
+            </div>
+            <button id="uploadPasswordList" class="button">
+                <i class="fas fa-key"></i> 上传密码本
+            </button>
+            <button id="selectOutputDir" class="button">
+                <i class="fas fa-folder-open"></i> 选择解压目录
+            </button>
+            <div class="version-info">
+                <span id="currentVersion"></span>
+                <a id="versionLink" href="#" target="_blank" class="version-link">
+                    <i class="fas fa-info-circle"></i>
+                </a>
+            </div>
+            <button id="cancelExtraction" class="button" style="display: none;">
+                <i class="fas fa-stop"></i> 取消解压
+            </button>
+        </div>
+
+        <div class="log-container" id="logContainer">
+            <!-- 日志内容输出 -->
+        </div>
+
+        <div id="password-dialog" class="password-dialog" style="display: none;">
+            <h3><i class="fas fa-lock"></i> 请输入密码</h3>
+            <input type="password" id="password-input" class="password-input" placeholder="输入密码...">
+            <div class="dialog-buttons">
+                <button id="submit-password" class="button">
+                    <i class="fas fa-check"></i> 确定
+                </button>
+                <button id="cancel-password" class="button">
+                    <i class="fas fa-times"></i> 取消
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
