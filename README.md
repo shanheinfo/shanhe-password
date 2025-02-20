@@ -5,9 +5,13 @@
 一个用于批量解压和破解加密压缩包的工具，自动支持密码本解压，无密码解压，询问用户密码式解压，暴力破解功能，目前支持 ZIP、RAR、7Z 压缩包格式
 目前 7z 格式暂不支持有密码解压，zip 和 rar 完全支持所有功能
 
+发行版程序下载：https://github.com/shanheinfo/shanhe-password/releases/latest
+
 项目采用 MIT 协议，请随意使用，而并不需要署名作者信息
 
 PS：不要忘记给本项目加上star，如果有问题可以提交issue
+## 程序预览
+<img src="frontend/src/assets/docs.png">
 
 ## 功能特点
 
