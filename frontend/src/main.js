@@ -20,12 +20,18 @@ const passwordInput = document.getElementById('password-input');
 const submitPasswordBtn = document.getElementById('submit-password');
 const cancelPasswordBtn = document.getElementById('cancel-password');
 
-// 添加日志的函数
+const MAX_LOG_ENTRIES = 500;
+
 function addLog(message) {
     const logEntry = document.createElement('div');
     logEntry.className = 'log-entry';
     logEntry.textContent = message;
     logContainer.appendChild(logEntry);
+    
+    while (logContainer.children.length > MAX_LOG_ENTRIES) {
+        logContainer.removeChild(logContainer.firstChild);
+    }
+    
     logContainer.scrollTop = logContainer.scrollHeight;
 }
 

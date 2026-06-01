@@ -17,6 +17,8 @@ import (
 
 	"bufio"
 	"bytes"
+	"sync/atomic"
+
 	"github.com/bodgit/sevenzip"
 	"github.com/nwaples/rardecode"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -26,12 +28,16 @@ import (
 
 type App struct {
 	ctx             context.Context
-	selectedArchive string     // 选中的压缩包路径
-	outputDir       string     // 输出目录
-	passwordList    string     // 密码本路径
-	logMessages     []string   // 存储日志消息
-	mu              sync.Mutex // 用于保护日志消息的互斥锁
+	selectedArchive string
+	outputDir       string
+	passwordList    string
+	logMessages     []string
+	mu              sync.Mutex
+	bruteForceCount int64
+	silentMode      int32
 }
+
+const maxLogMessages = 200
 
 func NewApp() *App {
 	return &App{}
@@ -127,7 +133,10 @@ func (a *App) addLogMessage(message string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.logMessages = append(a.logMessages, message)
-	wailsRuntime.EventsEmit(a.ctx, "logUpdate", message) //触发前端日志更新
+	if len(a.logMessages) > maxLogMessages {
+		a.logMessages = a.logMessages[len(a.logMessages)-maxLogMessages:]
+	}
+	wailsRuntime.EventsEmit(a.ctx, "logUpdate", message)
 }
 
 // GetLogMessages 获取所有日志消息
@@ -224,11 +233,13 @@ func (a *App) appendPasswordToPasswordList(password string) error {
 
 // tryPassword 尝试使用密码解压文件
 func (a *App) tryPassword(archivePath, password, outputDir string) bool {
-	a.addLogMessage(fmt.Sprintf("正在尝试解压: %s", filepath.Base(archivePath)))
-	if password != "" {
-		a.addLogMessage(fmt.Sprintf("尝试密码: %s", password))
-	} else {
-		a.addLogMessage("尝试无密码解压...")
+	if atomic.LoadInt32(&a.silentMode) == 0 {
+		a.addLogMessage(fmt.Sprintf("正在尝试解压: %s", filepath.Base(archivePath)))
+		if password != "" {
+			a.addLogMessage(fmt.Sprintf("尝试密码: %s", password))
+		} else {
+			a.addLogMessage("尝试无密码解压...")
+		}
 	}
 
 	ext := strings.ToLower(filepath.Ext(archivePath))
@@ -249,7 +260,9 @@ func (a *App) tryPassword(archivePath, password, outputDir string) bool {
 
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "password") {
-			a.addLogMessage("密码错误")
+			if atomic.LoadInt32(&a.silentMode) == 0 {
+				a.addLogMessage("密码错误")
+			}
 			return false
 		}
 		a.addLogMessage(fmt.Sprintf("解压失败: %v", err))
@@ -659,7 +672,9 @@ func (a *App) HandleManualPassword(password string) {
 
 // bruteForce 暴力破解
 func (a *App) bruteForce(archivePath, outputDir string, numWorkers int) {
-	// 用于通知所有 goroutine 停止的通道
+	atomic.StoreInt64(&a.bruteForceCount, 0)
+	atomic.StoreInt32(&a.silentMode, 1)
+	defer atomic.StoreInt32(&a.silentMode, 0)
 	stopChan := make(chan struct{})
 	// 用于接收成功找到的密码
 	resultChan := make(chan string)
@@ -753,7 +768,10 @@ func (a *App) generatePasswords(chars string, length int, jobs chan<- string, st
 			case <-stop:
 				return
 			case jobs <- prefix:
-				a.addLogMessage(fmt.Sprintf("正在尝试密码: %s", prefix))
+				count := atomic.AddInt64(&a.bruteForceCount, 1)
+				if count%100 == 0 {
+					a.addLogMessage(fmt.Sprintf("已尝试 %d 个密码...", count))
+				}
 			}
 			return
 		}
