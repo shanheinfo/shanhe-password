@@ -135,12 +135,24 @@ func (a *App) HandleManualPassword(password string) {
 	}
 }
 
+const maxNestedDepth = 10
+
 func (a *App) processNestedArchives(dir string) {
+	a.processNestedArchivesWithDepth(dir, 0)
+}
+
+func (a *App) processNestedArchivesWithDepth(dir string, depth int) {
+	if depth >= maxNestedDepth {
+		a.addLogMessage(fmt.Sprintf("嵌套深度达到上限 %d，停止递归: %s", maxNestedDepth, dir))
+		return
+	}
+
 	a.addLogMessage(fmt.Sprintf("开始扫描嵌套压缩包: %s", dir))
 
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	processedFiles := make(map[string]bool)
+	sem := make(chan struct{}, 4)
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -159,7 +171,9 @@ func (a *App) processNestedArchives(dir string) {
 		mu.Unlock()
 
 		wg.Add(1)
+		sem <- struct{}{}
 		go func(archivePath string) {
+			defer func() { <-sem }()
 			defer wg.Done()
 
 			baseName := strings.TrimSuffix(filepath.Base(archivePath), filepath.Ext(archivePath))
@@ -196,7 +210,7 @@ func (a *App) processNestedArchives(dir string) {
 			}
 
 			if success {
-				a.processNestedArchives(nestedOutputDir)
+				a.processNestedArchivesWithDepth(nestedOutputDir, depth+1)
 			} else {
 				a.addLogMessage(fmt.Sprintf("无法自动解压嵌套文件: %s，需要手动处理", filepath.Base(archivePath)))
 				mu.Lock()

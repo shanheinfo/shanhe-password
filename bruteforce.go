@@ -95,7 +95,7 @@ func (a *App) bruteForce(archivePath, outputDir string, numWorkers int) {
 				if bf.isStopped() {
 					return
 				}
-				bf.generatePasswords(set.chars, length, jobChan)
+				bf.generatePasswords([]byte(set.chars), length, jobChan)
 			}
 		}
 	}()
@@ -118,14 +118,15 @@ func (a *App) bruteForce(archivePath, outputDir string, numWorkers int) {
 	}
 }
 
-func (bf *BruteForcer) generatePasswords(chars string, length int, jobs chan<- string) {
-	var generate func(prefix string, length int)
-	generate = func(prefix string, length int) {
-		if length == 0 {
+func (bf *BruteForcer) generatePasswords(chars []byte, length int, jobs chan<- string) {
+	buf := make([]byte, 0, length)
+	var generate func(buf []byte, remaining int)
+	generate = func(buf []byte, remaining int) {
+		if remaining == 0 {
 			select {
 			case <-bf.stopChan:
 				return
-			case jobs <- prefix:
+			case jobs <- string(buf):
 				count := atomic.AddInt64(&bf.count, 1)
 				if count%100 == 0 {
 					bf.app.addLogMessage(fmt.Sprintf("已尝试 %d 个密码...", count))
@@ -138,9 +139,9 @@ func (bf *BruteForcer) generatePasswords(chars string, length int, jobs chan<- s
 			case <-bf.stopChan:
 				return
 			default:
-				generate(prefix+string(char), length-1)
+				generate(append(buf, char), remaining-1)
 			}
 		}
 	}
-	generate("", length)
+	generate(buf, length)
 }
