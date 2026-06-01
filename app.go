@@ -197,7 +197,7 @@ type VersionInfo struct {
 }
 
 func (a *App) GetVersionInfo() VersionInfo {
-	currentVersion := "v1.0.0"
+	currentVersion := "v1.0.2"
 	repoURL := "https://github.com/shanheinfo/shanhe-password"
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Get("https://api.github.com/repos/shanheinfo/shanhe-password/releases/latest")
