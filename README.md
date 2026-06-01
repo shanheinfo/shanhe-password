@@ -1,8 +1,17 @@
 # 山河压缩包密码批量解压和破解工具
 
+本项目源自群友的需求，正好我也有对应需求，随即制作而成
+
 支持 ZIP、RAR、7Z 格式加密压缩包的密码本解压、暴力破解，以及无密码解压和嵌套压缩包自动处理。
 
+## 下载
+
 [下载最新版本](https://github.com/shanheinfo/shanhe-password/releases/latest)
+
+- **Windows**：下载 `shanhe-password-v1.0.2-windows-amd64.zip`，解压后运行 exe 即可
+- **macOS**：下载 `shanhe-password-v1.0.2-darwin-universal.zip`，解压后拖入应用程序文件夹
+
+PS：不要忘记给本项目加上star，如果有问题可以提交issue
 
 ## 程序预览
 
@@ -78,6 +87,4 @@ wails build -platform darwin/universal
 
 ## 开源协议
 
-MIT 协议，可自由使用，无需署名。
-
-如有问题或建议，欢迎提交 [Issue](https://github.com/shanheinfo/shanhe-password/issues)。
+MIT 协议，请随意使用，而并不需要署名作者信息
