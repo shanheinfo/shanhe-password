@@ -27,15 +27,16 @@ func NewRarExtractor(path string, password string) (*RarExtractor, error) {
 }
 
 func (r *RarExtractor) VerifyPassword(password string) error {
-	if r.reader != nil {
-		r.reader.Close()
-	}
+	oldReader := r.reader
 	rr, err := rardecode.OpenReader(r.path, password)
 	if err != nil {
 		if isPasswordError(err) {
 			return fmt.Errorf("密码错误")
 		}
 		return fmt.Errorf("打开RAR文件失败: %v", err)
+	}
+	if oldReader != nil {
+		oldReader.Close()
 	}
 	r.reader = rr
 	r.password = password

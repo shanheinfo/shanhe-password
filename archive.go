@@ -58,6 +58,17 @@ func isArchiveFile(filename string) bool {
 
 func extractFileEntry(rc io.Reader, info os.FileInfo, outputDir, name string) error {
 	path := filepath.Join(outputDir, name)
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return fmt.Errorf("获取绝对路径失败: %v", err)
+	}
+	absOutputDir, err := filepath.Abs(outputDir)
+	if err != nil {
+		return fmt.Errorf("获取输出目录绝对路径失败: %v", err)
+	}
+	if !strings.HasPrefix(absPath, absOutputDir+string(os.PathSeparator)) && absPath != absOutputDir {
+		return fmt.Errorf("路径穿越检测: %s 试图写出到输出目录外", name)
+	}
 	if info.IsDir() {
 		return os.MkdirAll(path, os.ModePerm)
 	}
