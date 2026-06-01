@@ -3,9 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
-	"path/filepath"
 
 	"github.com/bodgit/sevenzip"
 )
