@@ -42,17 +42,17 @@ func New7zExtractor(path string, password string) (*SevenZExtractor, error) {
 }
 
 func (s *SevenZExtractor) VerifyPassword(password string) error {
+	if s.password == password && s.reader != nil {
+		return nil
+	}
 	oldReader := s.reader
-
 	var r *sevenzip.ReadCloser
 	var err error
-
 	if password != "" {
 		r, err = sevenzip.OpenReaderWithPassword(s.path, password)
 	} else {
 		r, err = sevenzip.OpenReader(s.path)
 	}
-
 	if err != nil {
 		var re *sevenzip.ReadError
 		if errors.As(err, &re) && re.Encrypted {
@@ -63,7 +63,6 @@ func (s *SevenZExtractor) VerifyPassword(password string) error {
 		}
 		return fmt.Errorf("打开7z文件失败: %v", err)
 	}
-
 	if oldReader != nil {
 		oldReader.Close()
 	}

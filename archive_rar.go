@@ -27,6 +27,9 @@ func NewRarExtractor(path string, password string) (*RarExtractor, error) {
 }
 
 func (r *RarExtractor) VerifyPassword(password string) error {
+	if r.password == password && r.reader != nil {
+		return nil
+	}
 	oldReader := r.reader
 	rr, err := rardecode.OpenReader(r.path, password)
 	if err != nil {
